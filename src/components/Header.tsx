@@ -13,7 +13,7 @@ const Header: React.FC = () => {
       <div className="flex items-center space-x-2">
         <Button variant="ghost" size="sm" className="text-gray-600 flex items-center">
           <Book className="h-4 w-4 mr-1" />
-          <span>课程库</span>
+          <span>历史教程</span>
         </Button>
         <Button variant="ghost" size="sm" className="text-gray-600 flex items-center">
           <Settings className="h-4 w-4 mr-1" />

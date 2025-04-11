@@ -6,82 +6,28 @@ import LessonPanel from '@/components/LessonPanel';
 import FeedbackPanel from '@/components/FeedbackPanel';
 import ProgressTracker from '@/components/ProgressTracker';
 import StepNavigation from '@/components/StepNavigation';
+import TopicInput from '@/components/TopicInput';
+import { generateTutorial, GeneratedLesson, LessonStep } from '@/services/aiService';
+import { useToast } from '@/hooks/use-toast';
 
-// Sample lesson data
-const lessonSteps = [
-  {
-    title: "Python 函数基础",
-    description: "函数是组织代码的基本单位。在Python中，我们使用def关键字来定义函数。本步骤将介绍如何创建一个简单的函数。",
-    examples: [
-      "def greet(name):\n    return f\"Hello, {name}!\"",
-      "# 调用函数\nresult = greet(\"Alice\")\nprint(result)  # 输出: Hello, Alice!"
-    ],
-    tips: [
-      "函数名应该使用小写字母和下划线",
-      "每个函数应该只做一件事情",
-      "添加适当的文档字符串来解释函数的用途"
-    ],
-    initialCode: "# 定义一个函数\ndef say_hello():\n    # 在这里添加代码\n    pass\n\n# 调用函数\nsay_hello()"
-  },
-  {
-    title: "函数参数",
-    description: "函数可以接受参数，这使得它们更加灵活和可重用。本步骤将学习如何在函数中使用参数。",
-    examples: [
-      "def greet(name):\n    return f\"Hello, {name}!\"",
-      "# 使用默认参数\ndef greet(name=\"World\"):\n    return f\"Hello, {name}!\""
-    ],
-    tips: [
-      "参数可以有默认值",
-      "Python支持位置参数和关键字参数",
-      "使用*args和**kwargs可以接受任意数量的参数"
-    ],
-    initialCode: "# 定义一个带参数的函数\ndef greet(name):\n    # 在这里添加代码\n    pass\n\n# 调用函数\ngreet(\"Alice\")"
-  },
-  {
-    title: "返回值",
-    description: "函数可以返回值，让我们能够使用函数的计算结果。本步骤将学习如何从函数返回值。",
-    examples: [
-      "def add(a, b):\n    return a + b\n\nsum = add(5, 3)  # sum = 8",
-      "# 返回多个值\ndef get_coordinates():\n    return (10, 20)\n\nx, y = get_coordinates()"
-    ],
-    tips: [
-      "如果没有return语句，函数默认返回None",
-      "可以使用return语句提前结束函数执行",
-      "Python允许返回多个值（实际上是一个元组）"
-    ],
-    initialCode: "# 定义一个返回值的函数\ndef multiply(a, b):\n    # 在这里添加代码\n    pass\n\n# 调用函数并打印结果\nresult = multiply(4, 5)\nprint(result)"
-  },
-  {
-    title: "作用域和变量",
-    description: "函数有自己的作用域，这影响变量的可见性和生命周期。本步骤将学习函数作用域的规则。",
-    examples: [
-      "# 局部变量\ndef my_function():\n    x = 10  # 局部变量\n    print(x)\n\nmy_function()\nprint(x)  # 错误: x未定义",
-      "# 使用global关键字\nx = 10\ndef modify_global():\n    global x\n    x = 20\n\nmodify_global()\nprint(x)  # 输出: 20"
-    ],
-    tips: [
-      "局部变量只在函数内部可见",
-      "全局变量可以在函数内部读取，但不能直接修改",
-      "使用global关键字可以在函数内修改全局变量"
-    ],
-    initialCode: "# 全局变量\ncounter = 0\n\n# 定义一个修改全局变量的函数\ndef increment():\n    # 在这里添加代码\n    pass\n\n# 调用函数三次\nincrement()\nincrement()\nincrement()\nprint(counter)  # 应该输出 3"
-  },
-  {
-    title: "综合练习",
-    description: "现在让我们结合前面学到的内容，创建一个更复杂的函数。这个练习将测试您对Python函数的理解。",
-    examples: [
-      "def calculate_discount(price, discount_rate=0.1):\n    discount = price * discount_rate\n    final_price = price - discount\n    return final_price, discount"
-    ],
-    tips: [
-      "分解问题为更小的步骤",
-      "测试函数时使用不同的输入值",
-      "确保函数能够处理各种边界情况"
-    ],
-    initialCode: "# 创建一个计算平均值的函数\ndef calculate_average(numbers):\n    # 在这里添加代码\n    pass\n\n# 测试函数\nnums = [10, 15, 20, 25, 30]\navg = calculate_average(nums)\nprint(f\"平均值: {avg}\")"
-  }
-];
+// 默认的引导消息
+const initialMessage = {
+  title: "欢迎使用 StepByCode.AI",
+  description: "请在上方输入您想学习的编程知识点，AI将为您生成个性化的学习教程。",
+  examples: [],
+  tips: [
+    "例如：Python装饰器、JavaScript Promise",
+    "React Hooks使用方法",
+    "SQL基础查询",
+    "数据结构与算法"
+  ],
+  initialCode: "// 准备好开始学习了吗？\n// 在上方输入您感兴趣的编程知识点！"
+};
 
 const Index = () => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [lesson, setLesson] = useState<GeneratedLesson | null>(null);
   const [feedback, setFeedback] = useState({ 
     type: 'none' as 'success' | 'warning' | 'error' | 'none', 
     message: '', 
@@ -89,7 +35,9 @@ const Index = () => {
     suggestions: [] 
   });
   
-  const currentLesson = lessonSteps[currentStep - 1];
+  const { toast } = useToast();
+  
+  const currentLessonStep: LessonStep = lesson?.steps[currentStep - 1] || initialMessage as LessonStep;
   
   const handlePrevious = () => {
     if (currentStep > 1) {
@@ -99,7 +47,7 @@ const Index = () => {
   };
   
   const handleNext = () => {
-    if (currentStep < lessonSteps.length) {
+    if (lesson && currentStep < lesson.steps.length) {
       setCurrentStep(prev => prev + 1);
       setFeedback({ type: 'none', message: '', details: '', suggestions: [] });
     }
@@ -111,7 +59,7 @@ const Index = () => {
   };
   
   const handleCodeRun = (code: string) => {
-    // Simulate code validation and feedback
+    // 模拟代码验证和反馈
     const hasError = Math.random() > 0.7;
     
     if (hasError) {
@@ -130,10 +78,34 @@ const Index = () => {
         type: 'success',
         message: '做得好！',
         details: '你的代码正确地实现了函数的功能。',
-        suggestions: currentStep < lessonSteps.length ? 
+        suggestions: lesson && currentStep < lesson.steps.length ? 
           ['准备好后，点击"下一步"继续学习'] : 
           ['恭喜完成本课程！']
       });
+    }
+  };
+
+  const handleTopicSubmit = async (topic: string) => {
+    setIsLoading(true);
+    try {
+      const generatedLesson = await generateTutorial(topic);
+      setLesson(generatedLesson);
+      setCurrentStep(1); // 重置到第一步
+      setFeedback({ type: 'none', message: '', details: '', suggestions: [] });
+      toast({
+        title: "教程生成成功",
+        description: `已为您生成关于"${topic}"的学习教程`,
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("生成教程失败", error);
+      toast({
+        title: "生成失败",
+        description: "无法生成教程，请稍后重试",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -142,30 +114,37 @@ const Index = () => {
       <Header />
       
       <main className="flex-1 container mx-auto px-4 py-6">
-        <div className="mb-10 mt-4">
-          <div className="mb-2 text-center">
-            <h2 className="text-2xl font-bold text-gray-800">Python 函数教程</h2>
-            <p className="text-gray-600">掌握Python函数的基础知识</p>
+        <div className="mb-6 mt-4">
+          <div className="mb-4 text-center">
+            <h2 className="text-2xl font-bold text-gray-800">AI 自适应编程学习平台</h2>
+            <p className="text-gray-600">根据您的需求，智能生成个性化学习路径</p>
           </div>
           
-          <div className="py-8 px-4">
-            <ProgressTracker 
-              steps={lessonSteps.length} 
-              currentStep={currentStep} 
-              onStepClick={handleStepClick}
-            />
-          </div>
+          <TopicInput 
+            onSubmit={handleTopicSubmit} 
+            isLoading={isLoading}
+          />
+          
+          {lesson && (
+            <div className="py-6 px-4">
+              <ProgressTracker 
+                steps={lesson.steps.length} 
+                currentStep={currentStep} 
+                onStepClick={handleStepClick}
+              />
+            </div>
+          )}
         </div>
       
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="space-y-6">
             <LessonPanel 
-              title={currentLesson.title} 
-              description={currentLesson.description}
-              examples={currentLesson.examples}
-              tips={currentLesson.tips}
+              title={currentLessonStep.title} 
+              description={currentLessonStep.description}
+              examples={currentLessonStep.examples}
+              tips={currentLessonStep.tips}
               currentStep={currentStep}
-              totalSteps={lessonSteps.length}
+              totalSteps={lesson?.steps.length || 1}
             />
             <FeedbackPanel 
               type={feedback.type} 
@@ -176,17 +155,19 @@ const Index = () => {
           </div>
           
           <CodeEditor 
-            initialCode={currentLesson.initialCode}
+            initialCode={currentLessonStep.initialCode}
             onCodeRun={handleCodeRun}
           />
         </div>
         
-        <StepNavigation 
-          currentStep={currentStep} 
-          totalSteps={lessonSteps.length}
-          onPrevious={handlePrevious}
-          onNext={handleNext}
-        />
+        {lesson && (
+          <StepNavigation 
+            currentStep={currentStep} 
+            totalSteps={lesson.steps.length}
+            onPrevious={handlePrevious}
+            onNext={handleNext}
+          />
+        )}
       </main>
       
       <footer className="bg-white border-t border-gray-200 py-4">
