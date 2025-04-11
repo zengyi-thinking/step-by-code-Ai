@@ -9,18 +9,44 @@ import { useToast } from '@/hooks/use-toast';
 const HomePage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [lesson, setLesson] = useState<GeneratedLesson | null>(null);
+  const [processingStage, setProcessingStage] = useState<'idle' | 'generating' | 'refining'>('idle');
   const { toast } = useToast();
   
   const handleTopicSubmit = async (topic: string) => {
     setIsLoading(true);
+    setProcessingStage('generating');
+    
     try {
-      const generatedLesson = await generateTutorial(topic);
-      setLesson(generatedLesson);
+      // 显示生成中的状态
       toast({
-        title: "教程生成成功",
-        description: `已为您生成关于"${topic}"的学习教程`,
+        title: "AI正在工作中",
+        description: "正在生成完整教程内容...",
         variant: "default",
       });
+      
+      // 调用AI服务生成教程
+      const generatedLesson = await generateTutorial(topic);
+      
+      // 显示正在细化步骤的状态
+      setProcessingStage('refining');
+      toast({
+        title: "教程内容已生成",
+        description: "正在将内容细化为学习步骤...",
+        variant: "default",
+      });
+      
+      // 短暂延迟，模拟AI正在细化步骤
+      // 在实际实现中，这部分已经包含在generateTutorial函数中
+      setTimeout(() => {
+        setLesson(generatedLesson);
+        toast({
+          title: "教程生成成功",
+          description: `已为您生成关于"${topic}"的学习教程`,
+          variant: "default",
+        });
+        setProcessingStage('idle');
+      }, 1000);
+      
     } catch (error) {
       console.error("生成教程失败", error);
       toast({
@@ -28,6 +54,7 @@ const HomePage = () => {
         description: "无法生成教程，请稍后重试",
         variant: "destructive",
       });
+      setProcessingStage('idle');
     } finally {
       setIsLoading(false);
     }
@@ -48,12 +75,14 @@ const HomePage = () => {
             <WelcomeSection 
               onTopicSubmit={handleTopicSubmit}
               isLoading={isLoading}
+              processingStage={processingStage}
             />
           ) : (
             <LearningSection 
               lesson={lesson}
               onNewTopicSubmit={handleTopicSubmit}
               isLoading={isLoading}
+              processingStage={processingStage}
             />
           )}
         </div>

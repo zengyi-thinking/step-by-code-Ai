@@ -12,12 +12,14 @@ interface LearningProps {
   lesson: GeneratedLesson;
   onNewTopicSubmit: (topic: string) => void;
   isLoading: boolean;
+  processingStage?: 'idle' | 'generating' | 'refining';
 }
 
 const LearningSection: React.FC<LearningProps> = ({ 
   lesson, 
   onNewTopicSubmit, 
-  isLoading 
+  isLoading,
+  processingStage = 'idle'
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [feedback, setFeedback] = useState({ 
@@ -80,6 +82,7 @@ const LearningSection: React.FC<LearningProps> = ({
       <TopicInput 
         onSubmit={onNewTopicSubmit} 
         isLoading={isLoading}
+        processingStage={processingStage}
       />
       
       <div className="py-6 px-4">

@@ -19,14 +19,20 @@ const initialMessage = {
 interface WelcomeSectionProps {
   onTopicSubmit: (topic: string) => void;
   isLoading: boolean;
+  processingStage?: 'idle' | 'generating' | 'refining';
 }
 
-const WelcomeSection: React.FC<WelcomeSectionProps> = ({ onTopicSubmit, isLoading }) => {
+const WelcomeSection: React.FC<WelcomeSectionProps> = ({ 
+  onTopicSubmit, 
+  isLoading, 
+  processingStage = 'idle' 
+}) => {
   return (
     <>
       <TopicInput 
         onSubmit={onTopicSubmit} 
         isLoading={isLoading}
+        processingStage={processingStage}
       />
       
       <div className="mt-12 max-w-2xl mx-auto">

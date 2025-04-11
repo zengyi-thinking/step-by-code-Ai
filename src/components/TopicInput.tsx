@@ -1,21 +1,56 @@
 
 import React, { useState } from 'react';
-import { Search } from 'lucide-react';
+import { Search, Brain, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 interface TopicInputProps {
   onSubmit: (topic: string) => void;
   isLoading: boolean;
+  processingStage?: 'idle' | 'generating' | 'refining';
 }
 
-const TopicInput: React.FC<TopicInputProps> = ({ onSubmit, isLoading }) => {
+const TopicInput: React.FC<TopicInputProps> = ({ 
+  onSubmit, 
+  isLoading,
+  processingStage = 'idle' 
+}) => {
   const [topic, setTopic] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (topic.trim()) {
       onSubmit(topic.trim());
+    }
+  };
+
+  const renderButtonContent = () => {
+    if (isLoading) {
+      if (processingStage === 'generating') {
+        return (
+          <span className="flex items-center">
+            <Brain className="h-4 w-4 mr-2 animate-pulse" /> 生成教程中...
+          </span>
+        );
+      } else if (processingStage === 'refining') {
+        return (
+          <span className="flex items-center">
+            <Sparkles className="h-4 w-4 mr-2 animate-pulse" /> 细化步骤中...
+          </span>
+        );
+      } else {
+        return (
+          <span className="flex items-center">
+            <span className="animate-spin mr-2">⏳</span> 处理中...
+          </span>
+        );
+      }
+    } else {
+      return (
+        <span className="flex items-center">
+          <Search className="h-4 w-4 mr-2" /> 生成教程
+        </span>
+      );
     }
   };
 
@@ -35,15 +70,7 @@ const TopicInput: React.FC<TopicInputProps> = ({ onSubmit, isLoading }) => {
         disabled={!topic.trim() || isLoading} 
         className="bg-learning-primary hover:bg-learning-secondary"
       >
-        {isLoading ? (
-          <span className="flex items-center">
-            <span className="animate-spin mr-2">⏳</span> 生成中...
-          </span>
-        ) : (
-          <span className="flex items-center">
-            <Search className="h-4 w-4 mr-2" /> 生成教程
-          </span>
-        )}
+        {renderButtonContent()}
       </Button>
     </form>
   );
