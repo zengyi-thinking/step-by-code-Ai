@@ -8,13 +8,15 @@ interface StepNavigationProps {
   totalSteps: number;
   onPrevious: () => void;
   onNext: () => void;
+  disableNext?: boolean;
 }
 
 const StepNavigation: React.FC<StepNavigationProps> = ({ 
   currentStep, 
   totalSteps,
   onPrevious,
-  onNext
+  onNext,
+  disableNext = false
 }) => {
   const isFirstStep = currentStep === 1;
   const isLastStep = currentStep === totalSteps;
@@ -37,8 +39,9 @@ const StepNavigation: React.FC<StepNavigationProps> = ({
       
       <Button
         onClick={onNext}
-        disabled={isLastStep}
-        className={`bg-learning-primary hover:bg-learning-secondary ${isLastStep ? 'opacity-50' : ''}`}
+        disabled={isLastStep || disableNext}
+        className={`bg-learning-primary hover:bg-learning-secondary ${(isLastStep || disableNext) ? 'opacity-50' : ''}`}
+        title={disableNext && !isLastStep ? "请先完成当前步骤" : ""}
       >
         {isLastStep ? '完成' : '下一步'}
         {!isLastStep && <ArrowRight className="h-4 w-4 ml-1" />}

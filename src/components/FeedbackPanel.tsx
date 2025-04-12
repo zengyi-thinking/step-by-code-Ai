@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { CheckCircle, AlertCircle, XCircle } from 'lucide-react';
+import { CheckCircle, AlertCircle, XCircle, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 type FeedbackType = 'success' | 'warning' | 'error' | 'none';
@@ -10,13 +10,15 @@ interface FeedbackPanelProps {
   message: string;
   details?: string;
   suggestions?: string[];
+  isEvaluating?: boolean;
 }
 
 const FeedbackPanel: React.FC<FeedbackPanelProps> = ({ 
   type, 
   message, 
   details,
-  suggestions = []
+  suggestions = [],
+  isEvaluating = false
 }) => {
   const getFeedbackIcon = () => {
     switch(type) {
@@ -43,6 +45,23 @@ const FeedbackPanel: React.FC<FeedbackPanelProps> = ({
         return 'bg-gray-50 border-gray-200';
     }
   };
+
+  if (isEvaluating) {
+    return (
+      <Card className="border shadow-md bg-blue-50 border-blue-200">
+        <CardHeader className="px-4 py-3 border-b">
+          <CardTitle className="text-sm font-medium">AI 反馈</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4">
+          <div className="text-center py-8 flex flex-col items-center justify-center">
+            <Loader2 className="h-8 w-8 text-blue-500 mb-2 animate-spin" />
+            <p className="text-blue-700">AI 正在分析您的代码...</p>
+            <p className="text-sm text-blue-600 mt-2">请稍候，这可能需要几秒钟</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (type === 'none') {
     return (

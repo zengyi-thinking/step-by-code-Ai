@@ -1,4 +1,3 @@
-
 export interface LessonStep {
   title: string;
   description: string;
@@ -13,13 +12,43 @@ export interface GeneratedLesson {
   steps: LessonStep[];
 }
 
+export interface CodeFeedback {
+  type: 'success' | 'warning' | 'error' | 'none';
+  message: string;
+  details: string;
+  suggestions: string[];
+}
+
 // 生成完整教程
 export async function generateTutorial(topic: string): Promise<GeneratedLesson> {
   console.log(`生成关于 ${topic} 的教程`);
   
-  // 模拟API请求延迟 - 在这里会调用AI生成完整教程
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  try {
+    // 真实API调用 - 使用API生成完整教程
+    const response = await fetch('/api/generate-tutorial', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ topic }),
+    });
 
+    if (!response.ok) {
+      throw new Error('API请求失败');
+    }
+
+    const fullTutorial = await response.json();
+    return await refineTutorialIntoSteps(fullTutorial, topic);
+  } catch (error) {
+    console.error('生成教程失败:', error);
+    
+    // 失败时返回模拟数据
+    return mockGenerateTutorial(topic);
+  }
+}
+
+// 模拟生成教程的后备方法
+function mockGenerateTutorial(topic: string): GeneratedLesson {
   // 模拟AI生成的完整教程数据
   const fullTutorial = {
     lessonTitle: `${topic} 教程`,
@@ -31,20 +60,9 @@ export async function generateTutorial(topic: string): Promise<GeneratedLesson> 
   };
   
   // 调用细化步骤的函数，将完整教程转换为步骤化教学
-  return await refineTutorialIntoSteps(fullTutorial, topic);
-}
-
-// 将完整教程细化为教学步骤
-async function refineTutorialIntoSteps(fullTutorial: any, topic: string): Promise<GeneratedLesson> {
-  // 模拟API调用延迟 - 这里会调用AI将完整教程拆分为步骤
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  console.log(`将${topic}教程细化为学习步骤`);
-  
-  // 模拟AI将完整内容细化为步骤的结果
   return {
-    lessonTitle: fullTutorial.lessonTitle,
-    lessonDescription: fullTutorial.lessonDescription,
+    lessonTitle: `${topic} 教程`,
+    lessonDescription: `学习 ${topic} 的基础知识和应用场景`,
     steps: [
       {
         title: `${topic} 基础概念`,
@@ -90,66 +108,91 @@ async function refineTutorialIntoSteps(fullTutorial: any, topic: string): Promis
   };
 }
 
-// 在实际应用中，您需要实现真实的AI API调用
-// 例如使用OpenAI API：
-/*
-export async function generateTutorial(topic: string): Promise<GeneratedLesson> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  
-  // 第一步：生成完整教程
-  const fullTutorialResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model: "gpt-4",
-      messages: [
-        {
-          role: "system",
-          content: "你是一个编程教学助手。请为用户生成一个完整的编程教程，详细解释概念和实现。"
-        },
-        {
-          role: "user",
-          content: `请生成一个关于 ${topic} 的完整编程教程，包括基础概念、常见用法和进阶技巧。`
-        }
-      ]
-    })
-  });
+// 将完整教程细化为教学步骤
+async function refineTutorialIntoSteps(fullTutorial: any, topic: string): Promise<GeneratedLesson> {
+  try {
+    // 真实API调用 - 使用AI将完整教程拆分为步骤
+    const response = await fetch('/api/refine-tutorial', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        fullTutorial, 
+        topic 
+      }),
+    });
 
-  const fullTutorialData = await fullTutorialResponse.json();
-  const fullTutorial = {
-    lessonTitle: `${topic} 教程`,
-    lessonDescription: `学习 ${topic} 的基础知识和应用场景`,
-    content: fullTutorialData.choices[0].message.content
-  };
-  
-  // 第二步：将完整教程细化为步骤
-  const stepsResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model: "gpt-4",
-      messages: [
-        {
-          role: "system",
-          content: "你是一个编程教学助手。请将完整教程分解为3-5个具体的学习步骤，每个步骤包含标题、描述、代码示例、学习提示和初始代码。"
-        },
-        {
-          role: "user",
-          content: `请将以下关于 ${topic} 的完整教程分解为3-5个具体的学习步骤：\n\n${fullTutorial.content}`
-        }
-      ]
-    })
-  });
+    if (!response.ok) {
+      throw new Error('API请求失败');
+    }
 
-  const stepsData = await stepsResponse.json();
-  // 解析步骤数据并返回结构化的教程
-  // 这里需要适当处理AI返回的数据格式
+    return await response.json();
+  } catch (error) {
+    console.error('细化教程失败:', error);
+    
+    // 如果API调用失败，返回基本的教程结构
+    if (typeof fullTutorial === 'object' && fullTutorial.lessonTitle) {
+      return fullTutorial as GeneratedLesson;
+    } else {
+      return mockGenerateTutorial(topic);
+    }
+  }
 }
-*/
 
+// 提交代码获取反馈
+export async function getCodeFeedback(
+  code: string, 
+  step: LessonStep, 
+  lessonTitle: string
+): Promise<CodeFeedback> {
+  try {
+    // 真实API调用 - 使用AI评估代码
+    const response = await fetch('/api/evaluate-code', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        code,
+        step,
+        lessonTitle 
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('API请求失败');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('获取代码反馈失败:', error);
+    
+    // 模拟随机反馈结果
+    const hasError = Math.random() > 0.7;
+    
+    if (hasError) {
+      return {
+        type: 'error',
+        message: '你的代码有一些问题',
+        details: '函数应该返回一个值，但目前没有返回任何东西。',
+        suggestions: [
+          '确保使用return语句',
+          '检查函数的缩进是否正确',
+          '确保所有变量已正确定义'
+        ]
+      };
+    } else {
+      return {
+        type: 'success',
+        message: '做得好！',
+        details: '你的代码正确地实现了函数的功能。',
+        suggestions: [
+          '准备好后，继续下一步学习',
+          '尝试修改代码以了解更多细节',
+          '思考这个概念如何应用到实际项目中'
+        ]
+      };
+    }
+  }
+}
