@@ -19,6 +19,36 @@ export interface CodeFeedback {
   suggestions: string[];
 }
 
+export interface AIAssistanceResponse {
+  message: string;
+  relatedLinks?: string[];
+  codeSnippets?: string[];
+}
+
+export interface UserData {
+  id: string;
+  username: string;
+  email: string;
+  avatarUrl?: string;
+  preferences: {
+    theme: 'light' | 'dark';
+    codeFont: string;
+    fontSize: number;
+  };
+  learningHistory: LearningHistoryItem[];
+}
+
+export interface LearningHistoryItem {
+  id: string;
+  lessonId: string;
+  lessonTitle: string;
+  startDate: Date;
+  lastAccessDate: Date;
+  completedSteps: number[];
+  currentStep: number;
+  progress: number; // 0-100
+}
+
 // 生成完整教程
 export async function generateTutorial(topic: string): Promise<GeneratedLesson> {
   console.log(`生成关于 ${topic} 的教程`);
@@ -194,5 +224,152 @@ export async function getCodeFeedback(
         ]
       };
     }
+  }
+}
+
+// 获取AI助手的回复
+export async function getAIAssistance(
+  userQuestion: string,
+  lessonTitle?: string,
+  currentStepTitle?: string
+): Promise<AIAssistanceResponse> {
+  try {
+    // 真实API调用 - 使用AI获取对用户问题的回复
+    const response = await fetch('/api/ai-assistance', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        userQuestion,
+        lessonTitle,
+        currentStepTitle
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('API请求失败');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('获取AI助手回复失败:', error);
+    
+    // 返回模拟回复
+    return {
+      message: generateMockResponse(userQuestion, lessonTitle, currentStepTitle),
+      relatedLinks: [
+        '官方文档',
+        '相关教程',
+        '常见问题'
+      ],
+      codeSnippets: [
+        '```python\nprint("Example code")\n```'
+      ]
+    };
+  }
+}
+
+// 生成模拟回复
+function generateMockResponse(
+  question: string,
+  lessonTitle?: string,
+  currentStepTitle?: string
+): string {
+  if (question.toLowerCase().includes('怎么') || question.toLowerCase().includes('如何')) {
+    return `根据我对${lessonTitle || '编程'}的理解，您可以通过以下步骤解决这个问题：\n\n1. 首先，确保您理解了${currentStepTitle || '当前概念'}的基础知识\n2. 尝试将问题拆分为更小的部分\n3. 逐步实现每个部分的功能\n\n如果您遇到特定的错误，请告诉我具体的错误信息，我可以帮您更精确地解决问题。`;
+  } else if (question.toLowerCase().includes('错误') || question.toLowerCase().includes('bug')) {
+    return `遇到错误是编程过程中的常态。根据您描述的问题，可能的原因有：\n\n1. 语法错误 - 检查您的代码是否有拼写错误或缺少标点符号\n2. 逻辑错误 - 检查您的算法逻辑是否正确\n3. 运行时错误 - 可能是由于不正确的输入或边界条件导致的\n\n如果您能提供具体的错误信息或代码片段，我可以提供更具体的帮助。`;
+  } else if (question.toLowerCase().includes('概念') || question.toLowerCase().includes('什么是')) {
+    return `在${lessonTitle || '编程'}中，这个概念指的是一种重要的编程范式或技术。它的主要特点包括：\n\n1. 提高代码的可重用性\n2. 增强程序的模块化\n3. 简化复杂系统的开发和维护\n\n学习这个概念对提升您的编程技能非常有帮助。如果您对某个具体方面有疑问，请告诉我，我可以深入解释。`;
+  } else {
+    return `感谢您的问题！作为您的AI学习助手，我很乐意帮助您解决关于${lessonTitle || '编程'}的问题。\n\n${question}是一个很好的问题。在${currentStepTitle || '当前学习阶段'}中，理解这一点确实很重要。\n\n您可以通过实践和多做练习来加深对这个概念的理解。如果您有更具体的问题，请随时提出，我会尽力提供更详细的解答。`;
+  }
+}
+
+// 获取用户数据
+export async function getUserData(userId: string): Promise<UserData> {
+  try {
+    // 真实API调用 - 获取用户数据
+    const response = await fetch(`/api/user/${userId}`);
+    if (!response.ok) {
+      throw new Error('获取用户数据失败');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('获取用户数据失败:', error);
+    
+    // 返回模拟用户数据
+    return {
+      id: '12345',
+      username: '示例用户',
+      email: 'user@example.com',
+      avatarUrl: '',
+      preferences: {
+        theme: 'light',
+        codeFont: 'Fira Code',
+        fontSize: 14
+      },
+      learningHistory: [
+        {
+          id: '1',
+          lessonId: 'python-basics',
+          lessonTitle: 'Python 基础语法',
+          startDate: new Date(Date.now() - 86400000 * 7),
+          lastAccessDate: new Date(Date.now() - 86400000 * 2),
+          completedSteps: [1, 2, 3],
+          currentStep: 3,
+          progress: 100
+        },
+        {
+          id: '2',
+          lessonId: 'js-promise',
+          lessonTitle: 'JavaScript Promise',
+          startDate: new Date(Date.now() - 86400000 * 3),
+          lastAccessDate: new Date(Date.now() - 86400000),
+          completedSteps: [1, 2],
+          currentStep: 3,
+          progress: 60
+        },
+        {
+          id: '3',
+          lessonId: 'react-hooks',
+          lessonTitle: 'React Hooks',
+          startDate: new Date(Date.now() - 86400000),
+          lastAccessDate: new Date(),
+          completedSteps: [1],
+          currentStep: 2,
+          progress: 30
+        }
+      ]
+    };
+  }
+}
+
+// 更新用户数据
+export async function updateUserData(userId: string, data: Partial<UserData>): Promise<UserData> {
+  try {
+    // 真实API调用 - 更新用户数据
+    const response = await fetch(`/api/user/${userId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    
+    if (!response.ok) {
+      throw new Error('更新用户数据失败');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('更新用户数据失败:', error);
+    
+    // 返回模拟的更新后用户数据
+    return {
+      ...await getUserData(userId),
+      ...data
+    };
   }
 }

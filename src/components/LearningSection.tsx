@@ -1,13 +1,17 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import CodeEditor from '@/components/CodeEditor';
 import LessonPanel from '@/components/LessonPanel';
 import FeedbackPanel from '@/components/FeedbackPanel';
 import ProgressTracker from '@/components/ProgressTracker';
 import StepNavigation from '@/components/StepNavigation';
 import TopicInput from '@/components/TopicInput';
-import { GeneratedLesson, LessonStep, getCodeFeedback, CodeFeedback } from '@/services/aiService';
+import AIAssistant from '@/components/AIAssistant';
+import UserProfile from '@/components/UserProfile';
+import LearningHistory from '@/components/LearningHistory';
+import { GeneratedLesson, LessonStep, getCodeFeedback, CodeFeedback, getUserData } from '@/services/aiService';
 import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface LearningProps {
   lesson: GeneratedLesson;
@@ -30,9 +34,23 @@ const LearningSection: React.FC<LearningProps> = ({
     suggestions: [] 
   });
   const [isEvaluating, setIsEvaluating] = useState(false);
+  const [activeTab, setActiveTab] = useState('learn');
   const { toast } = useToast();
   
   const currentLessonStep: LessonStep = lesson.steps[currentStep - 1];
+  
+  useEffect(() => {
+    // 模拟获取用户数据
+    const loadUserData = async () => {
+      try {
+        await getUserData('12345');
+      } catch (error) {
+        console.error('加载用户数据失败', error);
+      }
+    };
+    
+    loadUserData();
+  }, []);
   
   const handlePrevious = () => {
     if (currentStep > 1) {
@@ -43,7 +61,7 @@ const LearningSection: React.FC<LearningProps> = ({
   
   const handleNext = () => {
     if (currentStep < lesson.steps.length) {
-      setCurrentStep(prev => prev + 1);
+      setCurrentStep(prev => prev - 0 + 1);
       setFeedback({ type: 'none', message: '', details: '', suggestions: [] });
     }
   };
@@ -114,32 +132,74 @@ const LearningSection: React.FC<LearningProps> = ({
           onStepClick={handleStepClick}
         />
       </div>
-    
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="space-y-6">
-          <LessonPanel 
-            title={currentLessonStep.title} 
-            description={currentLessonStep.description}
-            examples={currentLessonStep.examples}
-            tips={currentLessonStep.tips}
-            currentStep={currentStep}
-            totalSteps={lesson.steps.length}
-          />
-          <FeedbackPanel 
-            type={feedback.type} 
-            message={feedback.message} 
-            details={feedback.details}
-            suggestions={feedback.suggestions}
-            isEvaluating={isEvaluating}
-          />
-        </div>
+      
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid grid-cols-3 mb-4">
+          <TabsTrigger value="learn">学习内容</TabsTrigger>
+          <TabsTrigger value="assistant">AI助手</TabsTrigger>
+          <TabsTrigger value="profile">个人中心</TabsTrigger>
+        </TabsList>
         
-        <CodeEditor 
-          initialCode={currentLessonStep.initialCode}
-          onCodeRun={handleCodeRun}
-          isRunning={isEvaluating}
-        />
-      </div>
+        <TabsContent value="learn" className="mt-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="space-y-6">
+              <LessonPanel 
+                title={currentLessonStep.title} 
+                description={currentLessonStep.description}
+                examples={currentLessonStep.examples}
+                tips={currentLessonStep.tips}
+                currentStep={currentStep}
+                totalSteps={lesson.steps.length}
+              />
+              <FeedbackPanel 
+                type={feedback.type} 
+                message={feedback.message} 
+                details={feedback.details}
+                suggestions={feedback.suggestions}
+                isEvaluating={isEvaluating}
+              />
+            </div>
+            
+            <CodeEditor 
+              initialCode={currentLessonStep.initialCode}
+              onCodeRun={handleCodeRun}
+              isRunning={isEvaluating}
+            />
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="assistant" className="mt-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <AIAssistant 
+              lessonTitle={lesson.lessonTitle} 
+              currentStepTitle={currentLessonStep.title} 
+            />
+            <div className="space-y-6">
+              <LessonPanel 
+                title={currentLessonStep.title} 
+                description={currentLessonStep.description}
+                currentStep={currentStep}
+                totalSteps={lesson.steps.length}
+              />
+              <CodeEditor 
+                initialCode={currentLessonStep.initialCode}
+                onCodeRun={handleCodeRun}
+              />
+            </div>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="profile" className="mt-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div>
+              <UserProfile />
+            </div>
+            <div>
+              <LearningHistory />
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
       
       <StepNavigation 
         currentStep={currentStep} 
