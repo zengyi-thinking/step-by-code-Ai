@@ -9,6 +9,15 @@ import LearningHistory from '@/components/LearningHistory';
 import { getUserData, updateUserData, UserData } from '@/services/aiService';
 import { useToast } from '@/hooks/use-toast';
 
+// Create an adapter interface to match LearningHistory component's expected HistoryItem type
+interface HistoryItem {
+  id: string;
+  title: string;
+  date: Date;
+  progress: number;
+  lastStep?: string;
+}
+
 const AILearningPage = () => {
   const [activeTab, setActiveTab] = useState('ai-assistant');
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -75,6 +84,17 @@ const AILearningPage = () => {
     // 这里可以添加导航到相应学习内容的逻辑
   };
 
+  // 将学习历史数据转换为LearningHistory组件期望的格式
+  const convertLearningHistory = (learningHistory: UserData['learningHistory']): HistoryItem[] => {
+    return learningHistory.map(item => ({
+      id: item.id,
+      title: item.lessonTitle,
+      date: item.lastAccessDate,
+      progress: item.progress,
+      lastStep: `步骤 ${item.currentStep}/${item.completedSteps.length + 1}`
+    }));
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header />
@@ -116,7 +136,7 @@ const AILearningPage = () => {
                 <TabsContent value="learning-history" className="mt-0">
                   {userData ? (
                     <LearningHistory 
-                      history={userData.learningHistory}
+                      history={convertLearningHistory(userData.learningHistory)}
                       onHistoryItemClick={handleHistoryItemClick}
                     />
                   ) : (

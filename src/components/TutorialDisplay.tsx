@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,6 +16,7 @@ const TutorialDisplay: React.FC<TutorialDisplayProps> = ({ tutorial, onComplete 
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [activeTab, setActiveTab] = useState('explanation');
   const [userCode, setUserCode] = useState('');
+  const [isRunning, setIsRunning] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'warning' | 'error' | 'none'; message: string } | null>(null);
 
   const currentStep = tutorial.steps[currentStepIndex];
@@ -50,24 +52,28 @@ const TutorialDisplay: React.FC<TutorialDisplayProps> = ({ tutorial, onComplete 
     }
   };
 
-  const handleCodeChange = (value: string) => {
-    setUserCode(value);
+  const handleCodeChange = (code: string) => {
+    setUserCode(code);
   };
 
   const handleRunCode = () => {
+    setIsRunning(true);
     // 这里可以添加代码运行逻辑
     // 模拟代码评估
-    if (userCode.trim().length > 0) {
-      setFeedback({
-        type: 'success',
-        message: '代码运行成功！继续下一步学习吧。'
-      });
-    } else {
-      setFeedback({
-        type: 'warning',
-        message: '请先编写一些代码再运行。'
-      });
-    }
+    setTimeout(() => {
+      if (userCode.trim().length > 0) {
+        setFeedback({
+          type: 'success',
+          message: '代码运行成功！继续下一步学习吧。'
+        });
+      } else {
+        setFeedback({
+          type: 'warning',
+          message: '请先编写一些代码再运行。'
+        });
+      }
+      setIsRunning(false);
+    }, 1000);
   };
 
   return (
@@ -119,17 +125,11 @@ const TutorialDisplay: React.FC<TutorialDisplayProps> = ({ tutorial, onComplete 
                 
                 <div className="border rounded-md overflow-hidden">
                   <CodeEditor
-                    value={userCode}
-                    onChange={handleCodeChange}
+                    initialCode={userCode}
                     language={tutorial.language}
-                    height="300px"
+                    onCodeRun={handleRunCode}
+                    isRunning={isRunning}
                   />
-                </div>
-                
-                <div className="mt-4 flex justify-end">
-                  <Button onClick={handleRunCode}>
-                    运行代码
-                  </Button>
                 </div>
                 
                 {feedback && (
