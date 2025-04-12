@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Loader2, History, Plus, MessageSquare, BookOpen, Code } from 'lucide-react';
 import { Button } from '@/components/ui/button';
